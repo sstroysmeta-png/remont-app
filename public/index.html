@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#1A1814" />
+    <meta name="description" content="М-Ремонт — точный расчёт стоимости ремонта по реальным ценам. Работы, материалы, разбивка по комнатам." />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="М-Ремонт" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <link rel="icon" href="%PUBLIC_URL%/icon-192.png" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/icon-192.png" />
+    <title>М-Ремонт — Калькулятор ремонта</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        background: #1A1814;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        font-family: 'DM Sans', sans-serif;
+      }
+      #root {
+        width: 100%;
+        max-width: 430px;
+        min-height: 100vh;
+        background: #F7F5F0;
+      }
+      .app-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background: #1A1814;
+        color: #B8864E;
+        font-family: Georgia, serif;
+        font-size: 22px;
+        gap: 16px;
+      }
+      .app-loading-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: #B8864E;
+        animation: pulse 1.2s infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 0.3; transform: scale(0.8); }
+        50% { opacity: 1; transform: scale(1.2); }
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>Включите JavaScript для работы приложения.</noscript>
+    <div id="root">
+      <div class="app-loading">
+        <div>М-Ремонт</div>
+        <div class="app-loading-dot"></div>
+      </div>
+    </div>
+  </body>
+</html>
