@@ -1,0 +1,25 @@
+{
+  "name": "Смета и дизайн: Цена ремонта",
+  "short_name": "М-Ремонт",
+  "description": "Калькулятор стоимости ремонта квартиры с распознаванием плана",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F0EB",
+  "theme_color": "#C8956C",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
