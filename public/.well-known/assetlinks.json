@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.sstroysmeta.remont",
+      "sha256_cert_fingerprints": [
+        "E3:43:8D:B5:CA:C2:28:69:E5:24:86:DC:5B:7E:3F:A4:F8:E8:D4:3E:EB:45:00:14:A3:B1:41:8E:70:9A:7F:4C"
+      ]
+    }
+  }
+]
