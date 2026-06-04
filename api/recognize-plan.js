@@ -1,114 +1,130 @@
-// api/recognize-plan.js
-// Vercel Serverless Function — получает base64-фото плана, отправляет в Claude Vision,
-// возвращает список комнат с площадями.
-// API-ключ хранится ТОЛЬКО в переменных окружения Vercel — в браузер не попадает.
+// ============================================================================
+//  /api/recognize-plan  —  СЕРВЕРНАЯ функция (работает на Vercel)
+// ----------------------------------------------------------------------------
+//  ЗАЧЕМ ОНА НУЖНА:
+//  Приложение НЕ хранит ключ AI внутри себя (иначе его можно украсть).
+//  Браузер/телефон отправляют фото сюда, на сервер. Здесь — и ТОЛЬКО здесь —
+//  лежит ваш ключ. Сервер обращается к AI и возвращает приложению результат.
+//
+//  КУДА ВСТАВИТЬ КЛЮЧ:
+//  Ключ НЕ пишется в этот файл! Он хранится в переменных окружения Vercel
+//  (Settings → Environment Variables). Подробно — в папке 05-ИНСТРУКЦИЯ.
+//
+//  Нужная переменная:  ANTHROPIC_API_KEY = sk-ant-xxxxxxxx
+//  (Если используете OpenAI — смотрите альтернативный блок ниже в файле.)
+// ============================================================================
 
 export default async function handler(req, res) {
   // Разрешаем только POST
   if (req.method !== "POST") {
-    return res.status(405).json({ ok: false, error: "Method not allowed" });
+    return res.status(405).json({ ok: false, error: "Только POST-запросы" });
   }
-
-  const { imageBase64 } = req.body || {};
-  if (!imageBase64) {
-    return res.status(400).json({ ok: false, error: "imageBase64 is required" });
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ ok: false, error: "API key not configured" });
-  }
-
-  const prompt = `Ты — эксперт по анализу планировок квартир.
-Тебе передаётся изображение плана квартиры (чертёж или фото).
-
-Твоя задача — извлечь все помещения и их примерную площадь в кв.м.
-
-Верни ТОЛЬКО JSON в формате (без пояснений, только JSON):
-{
-  "rooms": [
-    {"name": "Кухня", "area": 12, "cx": 0.2, "cy": 0.4},
-    {"name": "Гостиная", "area": 25, "cx": 0.5, "cy": 0.5},
-    {"name": "Спальня", "area": 18, "cx": 0.7, "cy": 0.3},
-    {"name": "Санузел совмещённый", "area": 6, "cx": 0.3, "cy": 0.7},
-    {"name": "Коридор", "area": 8, "cx": 0.5, "cy": 0.8}
-  ]
-}
-
-Правила:
-- name: русское название (Кухня, Спальня, Гостиная, Санузел, Коридор, Балкон и т.д.)
-- area: число в кв.м, минимум 3, максимум 80
-- cx, cy: относительные координаты центра комнаты (0..1) от левого-верхнего угла плана
-- Если площадь не читается — оцени по пропорциям
-- Если план не распознан — верни пустой массив rooms: []`;
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const { imageBase64 } = req.body || {};
+    if (!imageBase64) {
+      return res.status(400).json({ ok: false, error: "Нет изображения (imageBase64)" });
+    }
+
+    const API_KEY = process.env.ANTHROPIC_API_KEY;
+    if (!API_KEY) {
+      return res.status(500).json({
+        ok: false,
+        error: "На сервере не задан ключ ANTHROPIC_API_KEY (см. Settings → Environment Variables на Vercel)",
+      });
+    }
+
+    // Модель можно сменить через переменную окружения AI_MODEL.
+    // По умолчанию Sonnet 4.6 — лучше «читает» планировки.
+    // Хотите дешевле — поставьте AI_MODEL=claude-haiku-4-5-20251001
+    const MODEL = process.env.AI_MODEL || "claude-sonnet-4-6";
+
+    const prompt = [
+      "Ты — помощник по чтению планов квартир. На изображении план квартиры.",
+      "Определи помещения, их примерные площади в м² и положение.",
+      "Верни СТРОГО JSON без markdown, без пояснений, в формате:",
+      '{"rooms":[{"name":"Кухня","area":12,"cx":0.2,"cy":0.5}],"apt":null,"walls":[]}',
+      "Где: name — название комнаты по-русски; area — площадь в м² (число);",
+      "cx,cy — центр комнаты в долях от 0 до 1 (левый верхний угол = 0,0).",
+      "Если площадь не подписана — оцени по пропорциям. Только JSON.",
+    ].join(" ");
+
+    const aiResp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
+        "content-type": "application/json",
+        "x-api-key": API_KEY,
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-opus-4-5",
-        max_tokens: 1024,
+        model: MODEL,
+        max_tokens: 1500,
         messages: [
           {
             role: "user",
             content: [
               {
                 type: "image",
-                source: {
-                  type: "base64",
-                  media_type: "image/jpeg",
-                  data: imageBase64,
-                },
+                source: { type: "base64", media_type: "image/jpeg", data: imageBase64 },
               },
-              {
-                type: "text",
-                text: prompt,
-              },
+              { type: "text", text: prompt },
             ],
           },
         ],
       }),
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Anthropic API error:", errText);
-      return res.status(502).json({ ok: false, error: "AI service error: " + response.status });
+    if (!aiResp.ok) {
+      const errText = await aiResp.text();
+      return res.status(502).json({ ok: false, error: "AI вернул ошибку: " + errText.slice(0, 300) });
     }
 
-    const data = await response.json();
-    const rawText = data?.content?.[0]?.text || "";
+    const data = await aiResp.json();
+    let text = (data.content || []).map((b) => (b.type === "text" ? b.text : "")).join("");
 
-    // Извлекаем JSON из ответа
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return res.status(200).json({ ok: false, error: "AI не вернул JSON", rooms: [] });
+    // Убираем возможные ```json ... ``` и берём только JSON
+    text = text.replace(/```json/gi, "").replace(/```/g, "").trim();
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start === -1 || end === -1) {
+      return res.status(200).json({ ok: false, error: "Не удалось разобрать ответ AI" });
     }
 
     let parsed;
     try {
-      parsed = JSON.parse(jsonMatch[0]);
+      parsed = JSON.parse(text.slice(start, end + 1));
     } catch (e) {
-      return res.status(200).json({ ok: false, error: "Ошибка парсинга JSON", rooms: [] });
+      return res.status(200).json({ ok: false, error: "Ответ AI не в формате JSON" });
     }
 
-    const rooms = (parsed.rooms || []).filter(
-      (r) => r.name && typeof r.area === "number" && r.area >= 3
-    );
-
     return res.status(200).json({
-      ok: rooms.length > 0,
-      rooms,
-      walls: [],
-      apt: null,
+      ok: true,
+      rooms: Array.isArray(parsed.rooms) ? parsed.rooms : [],
+      apt: parsed.apt || null,
+      walls: Array.isArray(parsed.walls) ? parsed.walls : [],
     });
   } catch (err) {
-    console.error("recognize-plan error:", err);
-    return res.status(500).json({ ok: false, error: err.message || "Server error" });
+    return res.status(500).json({ ok: false, error: "Сервер: " + (err && err.message ? err.message : String(err)) });
   }
 }
+
+// ============================================================================
+//  АЛЬТЕРНАТИВА: если у вас ключ OpenAI, а не Anthropic.
+//  Закомментируйте функцию выше и используйте этот вариант — модель gpt-4o
+//  тоже умеет «видеть» изображения. Переменная: OPENAI_API_KEY.
+//
+//  const API_KEY = process.env.OPENAI_API_KEY;
+//  const aiResp = await fetch("https://api.openai.com/v1/chat/completions", {
+//    method: "POST",
+//    headers: { "content-type": "application/json", authorization: "Bearer " + API_KEY },
+//    body: JSON.stringify({
+//      model: "gpt-4o",
+//      max_tokens: 1500,
+//      messages: [{ role: "user", content: [
+//        { type: "text", text: prompt },
+//        { type: "image_url", image_url: { url: "data:image/jpeg;base64," + imageBase64 } },
+//      ]}],
+//    }),
+//  });
+//  ... далее разбираете data.choices[0].message.content так же, как text выше.
+// ============================================================================
