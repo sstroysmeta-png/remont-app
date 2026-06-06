@@ -557,34 +557,17 @@ function FloorPlanSVG(props){
 
 /* ── PHONE FRAME ── */
 function Phone(props){
-  var t=new Date();var time=t.getHours()+":"+("0"+t.getMinutes()).slice(-2);
   return (
-    <div style={{display:"flex",justifyContent:"center",alignItems:"flex-start",minHeight:"100vh",background:"linear-gradient(135deg,#1A1814,#2A2520)",padding:"20px 12px 40px",fontFamily:FB}}>
+    <div style={{display:"flex",flexDirection:"column",minHeight:"100vh",background:T.bg,fontFamily:FB}}>
       <style>{"@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}::-webkit-scrollbar{display:none;}button{transition:opacity 0.12s;}button:active{opacity:0.75;}"}</style>
-      <div style={{width:390,maxWidth:"100%",background:"#111",borderRadius:52,padding:"0 3px 3px",boxShadow:"0 40px 80px rgba(0,0,0,0.7)"}}>
-        <div style={{background:T.bg,borderRadius:48,overflow:"hidden",minHeight:812,display:"flex",flexDirection:"column"}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 28px 0",height:50,flexShrink:0,position:"relative"}}>
-            <span style={{fontFamily:FM,fontSize:14,fontWeight:600,color:T.dark}}>{time}</span>
-            <div style={{position:"absolute",top:12,left:"50%",transform:"translateX(-50%)",width:120,height:34,background:"#000",borderRadius:20}}/>
-            <div style={{display:"flex",gap:5,alignItems:"center"}}>{[3,4,5].map(function(h){return <div key={h} style={{width:3,height:h,background:T.dark,borderRadius:1}}/>;})}</div>
-          </div>
-          {props.step>0&&<div style={{padding:"4px 28px 0",flexShrink:0}}>
-            <div style={{height:2,background:T.surface,borderRadius:2,overflow:"hidden"}}>
-              <div style={{height:"100%",width:((props.step/props.total)*100)+"%",background:"linear-gradient(90deg,"+T.gold+",#D4A97A)",transition:"width 0.4s"}}/>
-            </div>
-          </div>}
-          <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column",position:"relative",animation:"fadeIn 0.2s ease"}}>
-            {props.children}
-            {/* Плавающая кнопка заявки — единый инстанс на всё приложение.
-               Привязана к рамке телефона (контейнер position:relative),
-               поэтому "ездит" вместе с экраном. compact — меньше на экранах выбора
-               материалов; raised — поднята над нижней CTA-кнопкой, чтобы не перекрывать. */}
-            {props.contact!==false&&<ContactForm compact={props.contactCompact} raised={props.contactRaised}/>}
-          </div>
-          <div style={{display:"flex",justifyContent:"center",padding:"8px 0 10px",flexShrink:0}}>
-            <div style={{width:134,height:5,background:T.dark,borderRadius:3,opacity:0.2}}/>
-          </div>
+      {props.step>0&&<div style={{padding:"4px 28px 0",flexShrink:0}}>
+        <div style={{height:2,background:T.surface,borderRadius:2,overflow:"hidden"}}>
+          <div style={{height:"100%",width:((props.step/props.total)*100)+"%",background:"linear-gradient(90deg,"+T.gold+",#D4A97A)",transition:"width 0.4s"}}/>
         </div>
+      </div>}
+      <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column",position:"relative",animation:"fadeIn 0.2s ease"}}>
+        {props.children}
+        {props.contact!==false&&<ContactForm compact={props.contactCompact} raised={props.contactRaised}/>}
       </div>
     </div>
   );
