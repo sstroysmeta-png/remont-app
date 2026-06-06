@@ -17,10 +17,10 @@ var CITIES=[
   {id:"stav",name:"Ставрополь",fo:"СКФО",k:0.80},
 ];
 var CONDS=[
-  {id:"bare",icon:"🧱",label:"Кирпич / бетон",desc:"Голые стены, новостройка",mult:1.25},
-  {id:"rough",icon:"🔨",label:"Штукатурка / стяжка",desc:"Черновая готова",mult:1.00},
-  {id:"pre",icon:"🪟",label:"Предчистовая",desc:"Осталась финишная отделка",mult:0.82},
-  {id:"old",icon:"🏠",label:"Вторичка",desc:"Требует демонтажа",mult:1.15},
+  {id:"bare",icon:"🧱",label:"Черновая (новостройка)",desc:"Нет штукатурки и стяжки",mult:1.25},
+  {id:"rough",icon:"🔨",label:"Черновая готова",desc:"Штукатурка и стяжка выполнены",mult:1.00},
+  {id:"pre",icon:"🪟",label:"Предчистовая",desc:"Шпаклёвка готова, только финиш",mult:0.82},
+  {id:"old",icon:"🏚️",label:"Вторичка / б/у",desc:"Демонтаж + полный ремонт",mult:1.15},
 ];
 var CLASSES=[
   {id:"eco",label:"Эконом",desc:"Практично и надёжно",bg:"linear-gradient(135deg,#4A6070,#3A5060)",pop:false},
@@ -63,6 +63,7 @@ var W={
   towel_rack:6300, bath_mixer:2400,
   collector:4500,
   sealing:500,
+  screed_cps:600, demo_plinth:80, demo_ceil:120, demo_door:2500, demo_bath:3500, demo_toilet:2500, demo_sink:2200, demo_towel_rack:1800, demo_plumb_pipe:8500, demo_kitchen:4500,
   door_install:7600, door_lining:2000, door_lock:1650,
 };
 
@@ -81,7 +82,7 @@ var BRANDS={
 };
 
 /* ── CALC ENGINE ── */
-function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,bathroomCfg,isPanelRoom){
+function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,bathroomCfg,isPanelRoom,plumbPct){
   var a=parseFloat(room.area)||10;
   var sw=Math.max(2,Math.round(Math.sqrt(a*1.4)*10)/10);
   var sh=Math.max(2,Math.round(a/sw*10)/10);
@@ -173,8 +174,25 @@ function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,b
   /* ══════════════════════════════════════════
      СТАНДАРТНЫЕ ПОМЕЩЕНИЯ
   ══════════════════════════════════════════ */
-  // ДЕМОНТАЖ
-  if(cond==="old"){LW("Демонтаж","Демонтаж стен и пола (черновой)",wallArea,"м²",W.demo_wall);if(isWet)LW("Демонтаж","Демонтаж старой плитки",wallArea,"м²",W.demo_tile);}
+  // ДЕМОНТАЖ — детальный для вторичного жилья
+  if(cond==="old"){
+    LW("Демонтаж","Демонтаж плинтусов",perim,"п.м.",W.demo_plinth||80);
+    LW("Демонтаж","Демонтаж напольного покрытия (ламинат/линолеум/паркет/плитка)",a,"м²",W.demo_floor);
+    if(isWet){
+      LW("Демонтаж","Демонтаж плитки пола санузла",a,"м²",W.demo_tile);
+      LW("Демонтаж","Демонтаж плитки стен санузла",wallArea,"м²",W.demo_tile);
+      LW("Демонтаж","Демонтаж ванны / душевого поддона",1,"шт.",W.demo_bath||3500);
+      LW("Демонтаж","Демонтаж унитаза",1,"шт.",W.demo_toilet||2500);
+      LW("Демонтаж","Демонтаж раковины с тумбой",1,"шт.",W.demo_sink||2200);
+      LW("Демонтаж","Демонтаж полотенцесушителя",1,"шт.",W.demo_towel_rack||1800);
+      LW("Демонтаж","Демонтаж старых труб и сантехнической арматуры",1,"компл.",W.demo_plumb_pipe||8500);
+    }else{
+      LW("Демонтаж","Снятие обоев / удаление краски / штукатурки",wallArea,"м²",W.demo_wall);
+      LW("Демонтаж","Демонтаж потолочного покрытия (побелка/краска/натяжной)",a,"м²",W.demo_ceil||120);
+      if(!isCor)LW("Демонтаж","Демонтаж дверного блока с коробкой и наличниками",1,"шт.",W.demo_door||2500);
+      if(isKit)LW("Демонтаж","Демонтаж кухонных шкафов / старого фартука",1,"компл.",W.demo_kitchen||4500);
+    }
+  }
 
   // ПОТОЛОК
   var ceil=ceilMat||(isWet?"Покраска":"Натяжные");
@@ -188,8 +206,13 @@ function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,b
     LW("Потолок","Монтаж потолочного плинтуса ПУ",perim,"п.м.",W.ceil_plinth);LM("Потолок","Плинтус потолочный полиуретан",perim,"п.м.",180);
     LW("Потолок","Монтаж люстры",1,"шт.",W.chandelier);
   }else if(ceil==="Покраска"){
-    LW("Потолок","Грунтовка потолка (2 цикла)",a,"м²",W.ceil_grout*2);LW("Потолок","Шпаклёвка потолка в 2 слоя",a,"м²",W.ceil_spackle);LM("Потолок","Шпаклёвка финишная",a,"м²",80);
-    LW("Потолок","Покраска потолка в 2 слоя",a,"м²",W.ceil_paint);LM("Потолок","Краска потолочная Tikkurila/Dulux",a,"м²",180);
+    if(cond==="pre"){
+      LW("Потолок","Грунтовка потолка под покраску",a,"м²",W.ceil_grout);
+      LW("Потолок","Покраска потолка в 2 слоя",a,"м²",W.ceil_paint);LM("Потолок","Краска потолочная Tikkurila/Dulux",a,"м²",180);
+    }else{
+      LW("Потолок","Грунтовка потолка (2 цикла)",a,"м²",W.ceil_grout*2);LW("Потолок","Шпаклёвка потолка в 2 слоя",a,"м²",W.ceil_spackle);LM("Потолок","Шпаклёвка финишная",a,"м²",80);
+      LW("Потолок","Покраска потолка в 2 слоя",a,"м²",W.ceil_paint);LM("Потолок","Краска потолочная Tikkurila/Dulux",a,"м²",180);
+    }
     LW("Потолок","Монтаж потолочного плинтуса",perim,"п.м.",W.ceil_plinth);LM("Потолок","Плинтус потолочный ПВХ",perim,"п.м.",120);
     LW("Потолок","Монтаж люстры",1,"шт.",W.chandelier);
   }else if(ceil==="Гипсокартон"||ceil==="Гипсокартон (2 уровня)"){
@@ -202,12 +225,15 @@ function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,b
     LW("Потолок","Монтаж плинтуса потолочного",perim,"п.м.",W.ceil_plinth);LW("Потолок","Монтаж люстры",1,"шт.",W.chandelier);
   }
 
-  // ЧЕРНОВАЯ ПОДГОТОВКА СТЕН (не для санузла — там отдельно)
-  if((cond==="bare"||cond==="rough")&&!isWet){
-    LW("Стены","Бетоноконтакт",wallArea,"м²",W.betonkontakt);LM("Стены","Бетоноконтакт Кнауф 5кг",Math.ceil(wallArea/10),"уп.",620);
-    LW("Стены","Штукатурная сетка 5×5мм",wallArea,"м²",W.plaster_mesh);LM("Стены","Сетка штукатурная стеклотканевая",wallArea,"м²",30);
-    LW("Стены","Машинная штукатурка гипсовая",wallArea,"м²",W.mach_plaster);LM("Стены","Штукатурка Кнауф Ротбанд 30кг",Math.ceil(wallArea*0.15),"меш.",620);
-    LW("Стены","Монтаж маяков",perim,"п.м.",W.beacons);
+  // ЧЕРНОВАЯ ПОДГОТОВКА СТЕН — по состоянию объекта
+  // bare/old: нужна штукатурка | rough: только шпаклёвка | pre: только грунтовка
+  if(!isWet){
+    if(cond==="bare"||cond==="old"){
+      LW("Стены","Бетоноконтакт / грунтовка глубокого проникновения",wallArea,"м²",W.betonkontakt);LM("Стены","Бетоноконтакт Кнауф 5кг",Math.ceil(wallArea/10),"уп.",620);
+      LW("Стены","Монтаж маяков (провешивание)",perim,"п.м.",W.beacons);
+      LW("Стены","Штукатурная сетка 5×5мм (армирование)",wallArea,"м²",W.plaster_mesh);LM("Стены","Сетка штукатурная стеклотканевая",wallArea,"м²",30);
+      LW("Стены","Машинная штукатурка гипсовая (Кнауф МП-75)",wallArea,"м²",W.mach_plaster);LM("Стены","Штукатурка Кнауф Ротбанд 30кг",Math.ceil(wallArea*0.15),"меш.",620);
+    }
   }
 
   // ОТДЕЛКА СТЕН
@@ -240,9 +266,13 @@ function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,b
     LW("Стены","Штукатурка откосов окна",3,"п.м.",W.slope_plaster);
   }else{
     /* ── Жилые + коридор ── */
-    LW("Стены","Грунтовка стен (2 цикла)",wallArea,"м²",W.grout_2);LM("Стены","Грунтовка Caparol / Кнауф",wallArea,"м²",42);
-    LW("Стены","Шпаклёвка стен в 2 слоя",wallArea,"м²",W.spackle_2);LM("Стены","Шпаклёвка Knauf Fugen HP",wallArea*0.5,"кг",80);
-    LW("Стены","Шлифовка стен",wallArea,"м²",W.grind);
+    if(cond==="pre"){
+      LW("Стены","Грунтовка стен под финишную отделку",wallArea,"м²",W.grout_1);LM("Стены","Грунтовка Caparol Tiefgrund / Кнауф",wallArea,"м²",42);
+    }else{
+      LW("Стены","Грунтовка стен (2 цикла)",wallArea,"м²",W.grout_2);LM("Стены","Грунтовка Caparol / Кнауф",wallArea,"м²",42);
+      LW("Стены","Шпаклёвка стен в 2 слоя",wallArea,"м²",W.spackle_2);LM("Стены","Шпаклёвка Knauf Fugen HP",wallArea*0.5,"кг",80);
+      LW("Стены","Шлифовка стен",wallArea,"м²",W.grind);
+    }
     if(wf==="Покраска"){LW("Стены","Покраска стен в 2 слоя",wallArea,"м²",W.paint_wall);LM("Стены","Краска интерьерная "+brands.paint,wallArea/6,"ведро",(mp.paint_w||150)*6);}
     else if(wf==="Обои"){LW("Стены","Поклейка обоев флизелиновых",wallArea,"м²",W.wallpaper);LM("Стены","Обои флизелиновые "+brands.lam,Math.ceil(wallArea/10),"рул.",(mp.paper||320)*10);LM("Стены","Клей для флизелина",Math.ceil(wallArea/30),"уп.",380);}
     else if(wf==="Плитка/керамогранит"){LW("Стены","Облицовка стен 60×60",wallArea,"м²",W.tile_wall_60x60);LM("Стены","Керамогранит стеновой 60×60 "+brands.tile,wallArea*1.1,"м²",mp.tile_w||1500);LM("Стены","Клей CM-17",Math.ceil(wallArea*0.5),"меш.",680);LW("Стены","Расшивка + затирка",wallArea,"м²",W.grout_tile*2);LM("Стены","Затирка CE-33",Math.ceil(wallArea/10),"кг",380);}
@@ -250,7 +280,10 @@ function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,b
     if(!isCor)LW("Стены","Штукатурка откосов окна",3,"п.м.",W.slope_plaster);
   }
 
-  // ПОЛЫ
+  // ПОЛЫ — стяжка только если нужна
+  if((cond==="bare"||cond==="old")&&!isWet){
+    LW("Пол","Стяжка ЦПС 50мм (подготовка основания)",a,"м²",W.screed_cps||600);LM("Пол","Смесь ЦПС М200 (50мм) — цемент + песок",Math.ceil(a*0.12),"меш.",360);
+  }
   LW("Пол","Грунтовка пола",a,"м²",W.grout_1);LM("Пол","Грунтовка для пола",a,"м²",42);
   var ff=floorMat||(isWet?"Плитка":"Кварцвинил");
   if(isWet){
@@ -402,7 +435,8 @@ function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,b
   }
 
   // САНТЕХНИКА — САНУЗЕЛ
-  if(isWet){
+  var doPlumb=(plumbPct===undefined||plumbPct===null)?1:plumbPct;
+  if(isWet&&doPlumb>0){
     var gvs=0,hvs=0,drains=0;
     if(bathBathing==="bath"||bathBathing==="shower"){gvs++;hvs++;drains++;}
     gvs++;hvs++;drains++; // раковина: ГВС+ХВС+слив
@@ -498,7 +532,7 @@ function calcEstimate(rooms,cond,cls,cityK,roomMats,elecPct,bathroomCfgOrMap,roo
     var bc=isCfgMap?(bathroomCfgOrMap[r.id]||bathroomCfgOrMap["default"]||{}):(bathroomCfgOrMap||{});
     var hasAC=roomAircons&&roomAircons[r.id]?true:false;
     var mergedBc=hasAC?Object.assign({},bc,{hasAircon:true}):bc;
-    var res=calcRoom(r,cond,cls,cityK,rm.wall,rm.floor,rm.ceil,rm.door,elecPct,mergedBc,r.id===panelRoomId);
+    var res=calcRoom(r,cond,cls,cityK,rm.wall,rm.floor,rm.ceil,rm.door,elecPct,mergedBc,r.id===panelRoomId,plumbPct);
     // Фильтрация исключённых секций
     if(exclude.length){
       res.works=res.works.filter(function(w){return exclude.indexOf(w.sec)===-1;});
@@ -1160,7 +1194,7 @@ function ScreenCondClass(props){
           {CLASSES.map(function(c){
             var isSel=cls===c.id;
             return(
-              <button key={c.id} onClick={function(){setCls(c.id);}} style={{display:"block",width:"100%",borderRadius:18,overflow:"hidden",border:"3px solid "+(isSel?"#fff":"transparent"),cursor:"pointer",marginBottom:12,padding:0,boxShadow:isSel?"0 0 0 2px "+T.gold+",0 8px 24px rgba(0,0,0,0.18)":"0 4px 12px rgba(0,0,0,0.10)"}}>
+              <button key={c.id} onClick={function(){setCls(c.id);if(cond)setTimeout(function(){props.onNext(cond,c.id);},250);}} style={{display:"block",width:"100%",borderRadius:18,overflow:"hidden",border:"3px solid "+(isSel?"#fff":"transparent"),cursor:"pointer",marginBottom:12,padding:0,boxShadow:isSel?"0 0 0 2px "+T.gold+",0 8px 24px rgba(0,0,0,0.18)":"0 4px 12px rgba(0,0,0,0.10)"}}>
                 <div style={{background:c.bg,padding:"18px 20px 14px",position:"relative",textAlign:"left"}}>
                   {c.pop&&!isSel&&<div style={{position:"absolute",top:10,right:14,background:"rgba(255,255,255,0.95)",color:T.goldD,fontFamily:FM,fontSize:8,padding:"3px 8px",borderRadius:6,letterSpacing:0.5}}>ПОПУЛЯРНЫЙ</div>}
                   {isSel&&<div style={{position:"absolute",top:10,right:14,background:T.gold,borderRadius:"50%",width:24,height:24,display:"flex",alignItems:"center",justifyContent:"center"}}><Check size={13} color="#fff"/></div>}
@@ -1234,8 +1268,8 @@ function ScreenMaterials(props){
   var doorItems=["Экошпон","Массив","Эмаль","Скрытые"];
   if(isPrem)doorItems=["Массив (дуб/ясень)","Скрытые в стену","Стеклянные","Эмаль RAL"];
   if(isEco)doorItems=["Экошпон","Эмаль"];
-  var plumbItems=["Последовательная разводка","Коллекторная разводка"];
-  if(isEco)plumbItems=["Последовательная разводка"];
+  var plumbItems=["Без сантехники","Последовательная разводка","Коллекторная разводка"];
+  if(isEco)plumbItems=["Без сантехники","Последовательная разводка"];
 
   var MATS=[
     {cat:"Стены",key:"wall",items:wallItems,multi:true,emoji:"🖌️"},
@@ -1258,7 +1292,7 @@ function ScreenMaterials(props){
   var blcS=useState({wall:"Покраска",floor:"Плитка/керамогранит",ceil:"ПВХ вагонка"});
   var balcCfg=blcS[0];var setBalcCfg=blcS[1];
   var s1=useState(null);var openInfo=s1[0];var setOpenInfo=s1[1];
-  var s2=useState(100);var elecPct=s2[0];var setElecPct=s2[1];
+  var s2=useState(100);var elecPct=s2[0];var setElecPct=s2[1];var s5p=useState(1);var plumbPct=s5p[0];var setPlumbPct=s5p[1];
   var showElecPct=sel.elec==="Добавление к существующей";
   // Кондиционеры — выбор по комнатам
   var acS=useState({});var selAircons=acS[0];var setSelAircons=acS[1];
@@ -1287,11 +1321,12 @@ function ScreenMaterials(props){
     if(nextTabIdx<TABS.length){setMatTab(TABS[nextTabIdx].id);}
     else{
       var ep=sel.elec==="Без электрики"?0:sel.elec==="С нуля (полная разводка)"?100:elecPct;
+      var pp=sel.plumb==="Без сантехники"?0:1;
       var s2=Object.assign({},sel);
       s2.bathroom=numBaths===1?bathConfigs[0]:bathConfigs;
       s2.balcony=balcCfg;
       s2.aircons=selAircons; // per-room AC flags
-      props.onNext(s2,ep);
+      props.onNext(s2,ep,pp);
     }
   }
 
@@ -1649,7 +1684,7 @@ function ScreenEstimate(props){
       });
       var rm=props.roomMats||fallbackMats;
       var bc=props.bathCfg||props.bathroomCfg||(props.sel&&props.sel.bathroom)||{};
-      var ep=props.elecPct!=null?props.elecPct:100;
+      var ep=props.elecPct!=null?props.elecPct:100;var plumbPct=props.plumbPct!==undefined?props.plumbPct:1;
       var aircons=props.sel&&props.sel.aircons||{};
       var r=calcEstimate(props.rooms||[],props.cond||"rough",props.cls||"mid",city.k,rm,ep,bc,aircons,exclSections||[]);
       setResult(r);
@@ -4520,9 +4555,9 @@ export default function App(){
   if(screen==="choose")return(<Phone contactCompact={true} step={0} total={0}><ScreenChoose city={city||CITIES[0]} onBack={function(){go("city");}} onShort={function(){go("s_upload");}} onDesign={function(){go("d_upload");}}/></Phone>);
   if(screen==="s_upload")return(<Phone contactCompact={true} contactRaised={true} step={1} total={4}><ScreenUpload onBack={function(){go("choose");}} onNext={function(r){setRooms(r);go("s_cond");}} step={0} total={4}/></Phone>);
   if(screen==="s_cond")return(<Phone contactCompact={true} contactRaised={true} step={2} total={4}><ScreenCondClass onBack={function(){go("s_upload");}} onNext={function(c,cl){setCond(c);setCls(cl);go("s_mats");}} step={1} total={4}/></Phone>);
-  if(screen==="s_mats")return(<Phone contactRaised={true} contactCompact={true} step={3} total={4}><ScreenMaterials cls={cls} rooms={rooms} onBack={function(){go("s_cond");}} onNext={function(s,ep){setSel(s);setElecPct(ep);if((s.wall&&s.wall.length>1)||(s.floor&&s.floor.length>1)||(s.ceil&&s.ceil.length>1)){go("s_roomcfg");}else{go("s_estimate");} }} step={2} total={4}/></Phone>);
+  if(screen==="s_mats")return(<Phone contactRaised={true} contactCompact={true} step={3} total={4}><ScreenMaterials cls={cls} rooms={rooms} onBack={function(){go("s_cond");}} onNext={function(s,ep,pp){setSel(s);setElecPct(ep);setPlumbPct(pp!==undefined?pp:1);if((s.wall&&s.wall.length>1)||(s.floor&&s.floor.length>1)||(s.ceil&&s.ceil.length>1)){go("s_roomcfg");}else{go("s_estimate");} }} step={2} total={4}/></Phone>);
   if(screen==="s_roomcfg")return(<Phone contactRaised={true} contactCompact={true} step={3} total={5}><ScreenRoomMats rooms={rooms} sel={sel} onBack={function(){go("s_mats");}} onNext={function(rm){setRoomMats(rm);go("s_estimate");}} step={3} total={5}/></Phone>);
-  if(screen==="s_estimate")return(<Phone step={4} total={4}><ScreenEstimate city={city} rooms={rooms} cond={cond} cls={cls} sel={sel} elecPct={elecPct} roomMats={roomMats} bathroomCfg={sel.bathroom||{}} onBack={function(){go(needRoomMats?"s_roomcfg":"s_mats");}} step={3} total={4}/></Phone>);
+  if(screen==="s_estimate")return(<Phone step={4} total={4}><ScreenEstimate city={city} rooms={rooms} cond={cond} cls={cls} sel={sel} elecPct={elecPct} plumbPct={plumbPct} roomMats={roomMats} bathroomCfg={sel.bathroom||{}} onBack={function(){go(needRoomMats?"s_roomcfg":"s_mats");}} step={3} total={4}/></Phone>);
   if(screen==="d_upload")return(<Phone contactCompact={true} contactRaised={true} step={1} total={3}><ScreenUpload onBack={function(){go("choose");}} onNext={function(r,img){setRooms(r);if(img)setPlanImg(img);go("d_cond");}} onPlanGeo={function(g){setPlanGeo(g);}} step={0} total={3}/></Phone>);
   if(screen==="d_cond")return(<Phone contactCompact={true} contactRaised={true} step={2} total={3}><ScreenCondClass onBack={function(){go("d_upload");}} onNext={function(c,cl){setCond(c);setCls(cl);go("d_plan");}} step={1} total={3}/></Phone>);
   if(screen==="d_plan")return(<Phone contactRaised={true} contactCompact={true} step={2} total={3}><ScreenDesignPlan rooms={rooms} onBack={function(){go("d_cond");}} onNext={function(cfg){setDesignCfg(cfg);go("d_estimate");}}/></Phone>);
