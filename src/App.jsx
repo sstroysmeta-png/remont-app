@@ -63,6 +63,7 @@ var W={
   towel_rack:6300, bath_mixer:2400,
   collector:4500,
   sealing:500,
+  demo_plinth:80, demo_ceil:120, demo_door:2500, demo_bath:3500, demo_toilet:2500, demo_sink:2200, demo_towel_rack:1800, demo_plumb_pipe:8500, demo_kitchen:4500,
   door_install:7600, door_lining:2000, door_lock:1650,
 };
 
@@ -173,8 +174,25 @@ function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,b
   /* ══════════════════════════════════════════
      СТАНДАРТНЫЕ ПОМЕЩЕНИЯ
   ══════════════════════════════════════════ */
-  // ДЕМОНТАЖ
-  if(cond==="old"){LW("Демонтаж","Демонтаж стен и пола (черновой)",wallArea,"м²",W.demo_wall);if(isWet)LW("Демонтаж","Демонтаж старой плитки",wallArea,"м²",W.demo_tile);}
+  // ДЕМОНТАЖ — детальный для вторичного жилья
+  if(cond==="old"){
+    LW("Демонтаж","Демонтаж плинтусов",perim,"п.м.",W.demo_plinth||80);
+    LW("Демонтаж","Демонтаж напольного покрытия (ламинат/линолеум/паркет)",a,"м²",W.demo_floor);
+    if(isWet){
+      LW("Демонтаж","Демонтаж плитки пола санузла",a,"м²",W.demo_tile);
+      LW("Демонтаж","Демонтаж плитки стен санузла",wallArea,"м²",W.demo_tile);
+      LW("Демонтаж","Демонтаж ванны / душевого поддона",1,"шт.",W.demo_bath||3500);
+      LW("Демонтаж","Демонтаж унитаза",1,"шт.",W.demo_toilet||2500);
+      LW("Демонтаж","Демонтаж раковины с тумбой",1,"шт.",W.demo_sink||2200);
+      LW("Демонтаж","Демонтаж полотенцесушителя",1,"шт.",W.demo_towel_rack||1800);
+      LW("Демонтаж","Демонтаж старой сантехнической разводки",1,"компл.",W.demo_plumb_pipe||8500);
+    }else{
+      LW("Демонтаж","Снятие обоев / удаление краски / штукатурки со стен",wallArea,"м²",W.demo_wall);
+      LW("Демонтаж","Демонтаж старого потолочного покрытия",a,"м²",W.demo_ceil||120);
+      if(!isCor)LW("Демонтаж","Демонтаж дверного блока с коробкой и наличниками",1,"шт.",W.demo_door||2500);
+      if(isKit)LW("Демонтаж","Демонтаж кухонных шкафов / старого фартука",1,"компл.",W.demo_kitchen||4500);
+    }
+  }
 
   // ПОТОЛОК
   var ceil=ceilMat||(isWet?"Покраска":"Натяжные");
@@ -188,8 +206,13 @@ function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,b
     LW("Потолок","Монтаж потолочного плинтуса ПУ",perim,"п.м.",W.ceil_plinth);LM("Потолок","Плинтус потолочный полиуретан",perim,"п.м.",180);
     LW("Потолок","Монтаж люстры",1,"шт.",W.chandelier);
   }else if(ceil==="Покраска"){
-    LW("Потолок","Грунтовка потолка (2 цикла)",a,"м²",W.ceil_grout*2);LW("Потолок","Шпаклёвка потолка в 2 слоя",a,"м²",W.ceil_spackle);LM("Потолок","Шпаклёвка финишная",a,"м²",80);
-    LW("Потолок","Покраска потолка в 2 слоя",a,"м²",W.ceil_paint);LM("Потолок","Краска потолочная Tikkurila/Dulux",a,"м²",180);
+    if(cond==="pre"){
+      LW("Потолок","Грунтовка потолка под покраску",a,"м²",W.ceil_grout);
+      LW("Потолок","Покраска потолка в 2 слоя",a,"м²",W.ceil_paint);LM("Потолок","Краска потолочная Tikkurila/Dulux",a,"м²",180);
+    }else{
+      LW("Потолок","Грунтовка потолка (2 цикла)",a,"м²",W.ceil_grout*2);LW("Потолок","Шпаклёвка потолка в 2 слоя",a,"м²",W.ceil_spackle);LM("Потолок","Шпаклёвка финишная",a,"м²",80);
+      LW("Потолок","Покраска потолка в 2 слоя",a,"м²",W.ceil_paint);LM("Потолок","Краска потолочная Tikkurila/Dulux",a,"м²",180);
+    }
     LW("Потолок","Монтаж потолочного плинтуса",perim,"п.м.",W.ceil_plinth);LM("Потолок","Плинтус потолочный ПВХ",perim,"п.м.",120);
     LW("Потолок","Монтаж люстры",1,"шт.",W.chandelier);
   }else if(ceil==="Гипсокартон"||ceil==="Гипсокартон (2 уровня)"){
@@ -203,7 +226,8 @@ function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,b
   }
 
   // ЧЕРНОВАЯ ПОДГОТОВКА СТЕН (не для санузла — там отдельно)
-  if((cond==="bare"||cond==="rough")&&!isWet){
+  // Штукатурка стен: только bare (новостройка) и old (после демонтажа). rough/pre — штукатурка уже есть.
+  if((cond==="bare"||cond==="old")&&!isWet){
     LW("Стены","Бетоноконтакт",wallArea,"м²",W.betonkontakt);LM("Стены","Бетоноконтакт Кнауф 5кг",Math.ceil(wallArea/10),"уп.",620);
     LW("Стены","Штукатурная сетка 5×5мм",wallArea,"м²",W.plaster_mesh);LM("Стены","Сетка штукатурная стеклотканевая",wallArea,"м²",30);
     LW("Стены","Машинная штукатурка гипсовая",wallArea,"м²",W.mach_plaster);LM("Стены","Штукатурка Кнауф Ротбанд 30кг",Math.ceil(wallArea*0.15),"меш.",620);
@@ -226,7 +250,7 @@ function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,b
     var fartukA=Math.round(kitW*0.7*10)/10; // фартук ~70см высоты
     var mainWA=Math.max(0,wallArea-fartukA);
     LW("Стены","Грунтовка стен кухни (2 цикла)",wallArea,"м²",W.grout_2);LM("Стены","Грунтовка влагостойкая",wallArea,"м²",42);
-    LW("Стены","Шпаклёвка стен (кроме зоны фартука)",mainWA,"м²",W.spackle_2);LM("Стены","Шпаклёвка Knauf HP",mainWA*0.5,"кг",80);LW("Стены","Шлифовка стен",mainWA,"м²",W.grind);
+    if(cond!=="pre"){LW("Стены","Шпаклёвка стен (кроме зоны фартука)",mainWA,"м²",W.spackle_2);LM("Стены","Шпаклёвка Knauf HP",mainWA*0.5,"кг",80);LW("Стены","Шлифовка стен",mainWA,"м²",W.grind);}
     if(wf==="Плитка/керамогранит"){
       // Вся стена плиткой
       LW("Стены","Облицовка стен кухни плиткой 60×60",wallArea,"м²",W.tile_wall_60x60);LM("Стены","Керамогранит стеновой 60×60 "+brands.tile,wallArea*1.1,"м²",mp.tile_w||1500);LM("Стены","Клей CM-17",Math.ceil(wallArea*0.5),"меш.",680);LW("Стены","Расшивка + затирка",wallArea,"м²",W.grout_tile*2);LM("Стены","Затирка CE-33",Math.ceil(wallArea/10),"кг",380);
@@ -240,9 +264,13 @@ function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,b
     LW("Стены","Штукатурка откосов окна",3,"п.м.",W.slope_plaster);
   }else{
     /* ── Жилые + коридор ── */
-    LW("Стены","Грунтовка стен (2 цикла)",wallArea,"м²",W.grout_2);LM("Стены","Грунтовка Caparol / Кнауф",wallArea,"м²",42);
-    LW("Стены","Шпаклёвка стен в 2 слоя",wallArea,"м²",W.spackle_2);LM("Стены","Шпаклёвка Knauf Fugen HP",wallArea*0.5,"кг",80);
-    LW("Стены","Шлифовка стен",wallArea,"м²",W.grind);
+    if(cond==="pre"){
+      LW("Стены","Грунтовка стен под финишную отделку",wallArea,"м²",W.grout_1);LM("Стены","Грунтовка Caparol Tiefgrund / Кнауф",wallArea,"м²",42);
+    }else{
+      LW("Стены","Грунтовка стен (2 цикла)",wallArea,"м²",W.grout_2);LM("Стены","Грунтовка Caparol / Кнауф",wallArea,"м²",42);
+      LW("Стены","Шпаклёвка стен в 2 слоя",wallArea,"м²",W.spackle_2);LM("Стены","Шпаклёвка Knauf Fugen HP",wallArea*0.5,"кг",80);
+      LW("Стены","Шлифовка стен",wallArea,"м²",W.grind);
+    }
     if(wf==="Покраска"){LW("Стены","Покраска стен в 2 слоя",wallArea,"м²",W.paint_wall);LM("Стены","Краска интерьерная "+brands.paint,wallArea/6,"ведро",(mp.paint_w||150)*6);}
     else if(wf==="Обои"){LW("Стены","Поклейка обоев флизелиновых",wallArea,"м²",W.wallpaper);LM("Стены","Обои флизелиновые "+brands.lam,Math.ceil(wallArea/10),"рул.",(mp.paper||320)*10);LM("Стены","Клей для флизелина",Math.ceil(wallArea/30),"уп.",380);}
     else if(wf==="Плитка/керамогранит"){LW("Стены","Облицовка стен 60×60",wallArea,"м²",W.tile_wall_60x60);LM("Стены","Керамогранит стеновой 60×60 "+brands.tile,wallArea*1.1,"м²",mp.tile_w||1500);LM("Стены","Клей CM-17",Math.ceil(wallArea*0.5),"меш.",680);LW("Стены","Расшивка + затирка",wallArea,"м²",W.grout_tile*2);LM("Стены","Затирка CE-33",Math.ceil(wallArea/10),"кг",380);}
@@ -475,7 +503,7 @@ function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,b
   }
 
   // САНТЕХНИКА — КУХНЯ
-  if(isKit){
+  if(isKit&&doPlumb>0){
     LW("Сантехника","Подводка ГВС+ХВС под мойку (2 точки)",2,"точка",W.plumb_point_gvs);
     LM("Сантехника","Труба PPR PN20 d20 (кухня)",5,"п.м.",285);LM("Сантехника","Фитинги PPR кухня",1,"компл.",1250);
     LW("Сантехника","Монтаж канализации мойки d50",1,"точка",1900);
