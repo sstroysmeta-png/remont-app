@@ -661,6 +661,11 @@ function ScreenWelcome(props){
           })}
         </div>
         <div style={{paddingBottom:4}}/>
+        {/* ── Главная акцентная кнопка: начать расчёт ── */}
+        <button onClick={props.onNext} style={{display:"block",width:"100%",padding:"17px 18px",borderRadius:18,background:"#fff",border:"2.5px solid "+T.gold,cursor:"pointer",marginBottom:14,boxShadow:"0 6px 26px rgba(184,134,78,0.28)",textAlign:"center"}}>
+          <div style={{fontFamily:FD,fontSize:21,fontWeight:700,color:T.goldD,marginBottom:3,letterSpacing:-0.3}}>📐 Начать расчёт сметы</div>
+          <div style={{fontFamily:FB,fontSize:11,color:T.muted}}>Бесплатно · результат за 3 минуты</div>
+        </button>
         {/* ── Большая CTA-кнопка на главной ── */}
         <a href="https://m1-remont.ru" target="_blank" rel="noopener noreferrer"
            style={{display:"block",textDecoration:"none",marginBottom:14}}>
@@ -741,7 +746,7 @@ function ContactForm(props){
          compact=false → полная кнопка «✉️ Оставить заявку» (экраны смет).
          raised        → поднята над нижней CTA, чтобы ничего не перекрывать. */}
       {!open&&<button onClick={function(){setOpen(true);}} aria-label="Оставить заявку" title="Оставить заявку" style={{
-        position:"absolute",left:compact?12:16,bottom:btnBottom,zIndex:200,
+        position:"absolute",right:compact?12:16,bottom:btnBottom,zIndex:200,
         display:"flex",alignItems:"center",justifyContent:"center",gap:compact?0:7,
         padding:compact?0:"11px 16px",
         width:compact?34:"auto",height:compact?34:"auto",
@@ -1292,7 +1297,7 @@ function ScreenMaterials(props){
   var blcS=useState({wall:"Покраска",floor:"Плитка/керамогранит",ceil:"ПВХ вагонка"});
   var balcCfg=blcS[0];var setBalcCfg=blcS[1];
   var s1=useState(null);var openInfo=s1[0];var setOpenInfo=s1[1];
-  var s2=useState(100);var elecPct=s2[0];var setElecPct=s2[1];var s5p=useState(1);var plumbPct=s5p[0];var setPlumbPct=s5p[1];
+  var s2=useState(100);var elecPct=s2[0];var setElecPct=s2[1];
   var showElecPct=sel.elec==="Добавление к существующей";
   // Кондиционеры — выбор по комнатам
   var acS=useState({});var selAircons=acS[0];var setSelAircons=acS[1];
@@ -4538,7 +4543,7 @@ export default function App(){
   var s3=useState(null);var cond=s3[0];var setCond=s3[1];
   var s4=useState(null);var cls=s4[0];var setCls=s4[1];
   var s5=useState({wall:[],floor:[],ceil:[],door:"",elec:"",plumb:"",bathroom:{}});var sel=s5[0];var setSel=s5[1];
-  var s6=useState(100);var elecPct=s6[0];var setElecPct=s6[1];
+  var s6=useState(100);var elecPct=s6[0];var setElecPct=s6[1];var s6p=useState(1);var plumbPct=s6p[0];var setPlumbPct=s6p[1];
   var s7=useState(null);var roomMats=s7[0];var setRoomMats=s7[1];
   var s8=useState({});var designCfg=s8[0];var setDesignCfg=s8[1];
   var s9=useState(null);var planImg=s9[0];var setPlanImg=s9[1];
