@@ -627,6 +627,11 @@ function ScreenWelcome(props){
           })}
         </div>
         <div style={{paddingBottom:4}}/>
+        {/* ── Главная акцентная кнопка: начать расчёт ── */}
+        <button onClick={props.onNext} style={{display:"block",width:"100%",padding:"17px 18px",borderRadius:18,background:"#fff",border:"2.5px solid "+T.gold,cursor:"pointer",marginBottom:14,boxShadow:"0 6px 26px rgba(184,134,78,0.28)",textAlign:"center"}}>
+          <div style={{fontFamily:FD,fontSize:21,fontWeight:700,color:T.goldD,marginBottom:3,letterSpacing:-0.3}}>📐 Начать расчёт сметы</div>
+          <div style={{fontFamily:FB,fontSize:11,color:T.muted}}>Бесплатно · результат за 3 минуты</div>
+        </button>
         {/* ── Большая CTA-кнопка на главной ── */}
         <a href="https://m1-remont.ru" target="_blank" rel="noopener noreferrer"
            style={{display:"block",textDecoration:"none",marginBottom:14}}>
@@ -707,7 +712,7 @@ function ContactForm(props){
          compact=false → полная кнопка «✉️ Оставить заявку» (экраны смет).
          raised        → поднята над нижней CTA, чтобы ничего не перекрывать. */}
       {!open&&<button onClick={function(){setOpen(true);}} aria-label="Оставить заявку" title="Оставить заявку" style={{
-        position:"absolute",left:compact?12:16,bottom:btnBottom,zIndex:200,
+        position:"absolute",right:compact?12:16,bottom:btnBottom,zIndex:200,
         display:"flex",alignItems:"center",justifyContent:"center",gap:compact?0:7,
         padding:compact?0:"11px 16px",
         width:compact?34:"auto",height:compact?34:"auto",
@@ -1160,7 +1165,7 @@ function ScreenCondClass(props){
           {CLASSES.map(function(c){
             var isSel=cls===c.id;
             return(
-              <button key={c.id} onClick={function(){setCls(c.id);}} style={{display:"block",width:"100%",borderRadius:18,overflow:"hidden",border:"3px solid "+(isSel?"#fff":"transparent"),cursor:"pointer",marginBottom:12,padding:0,boxShadow:isSel?"0 0 0 2px "+T.gold+",0 8px 24px rgba(0,0,0,0.18)":"0 4px 12px rgba(0,0,0,0.10)"}}>
+              <button key={c.id} onClick={function(){setCls(c.id);if(cond)setTimeout(function(){props.onNext(cond,c.id);},250);}} style={{display:"block",width:"100%",borderRadius:18,overflow:"hidden",border:"3px solid "+(isSel?"#fff":"transparent"),cursor:"pointer",marginBottom:12,padding:0,boxShadow:isSel?"0 0 0 2px "+T.gold+",0 8px 24px rgba(0,0,0,0.18)":"0 4px 12px rgba(0,0,0,0.10)"}}>
                 <div style={{background:c.bg,padding:"18px 20px 14px",position:"relative",textAlign:"left"}}>
                   {c.pop&&!isSel&&<div style={{position:"absolute",top:10,right:14,background:"rgba(255,255,255,0.95)",color:T.goldD,fontFamily:FM,fontSize:8,padding:"3px 8px",borderRadius:6,letterSpacing:0.5}}>ПОПУЛЯРНЫЙ</div>}
                   {isSel&&<div style={{position:"absolute",top:10,right:14,background:T.gold,borderRadius:"50%",width:24,height:24,display:"flex",alignItems:"center",justifyContent:"center"}}><Check size={13} color="#fff"/></div>}
