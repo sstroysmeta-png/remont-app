@@ -81,7 +81,7 @@ var BRANDS={
 };
 
 /* ── CALC ENGINE ── */
-function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,bathroomCfg,isPanelRoom){
+function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,bathroomCfg,isPanelRoom,plumbPct){
   var a=parseFloat(room.area)||10;
   var sw=Math.max(2,Math.round(Math.sqrt(a*1.4)*10)/10);
   var sh=Math.max(2,Math.round(a/sw*10)/10);
@@ -402,7 +402,8 @@ function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,b
   }
 
   // САНТЕХНИКА — САНУЗЕЛ
-  if(isWet){
+  var doPlumb=(plumbPct===undefined||plumbPct===null)?1:plumbPct;
+  if(isWet&&doPlumb>0){
     var gvs=0,hvs=0,drains=0;
     if(bathBathing==="bath"||bathBathing==="shower"){gvs++;hvs++;drains++;}
     gvs++;hvs++;drains++; // раковина: ГВС+ХВС+слив
@@ -485,7 +486,7 @@ function calcRoom(room,cond,cls,cityK,wallMat,floorMat,ceilMat,doorMat,elecPct,b
   return{works:works,materials:mats,workTotal:wT,matTotal:mT,total:wT+mT,area:a,name:room.name};
 }
 
-function calcEstimate(rooms,cond,cls,cityK,roomMats,elecPct,bathroomCfgOrMap,roomAircons,excludeSections){
+function calcEstimate(rooms,cond,cls,cityK,roomMats,elecPct,bathroomCfgOrMap,roomAircons,excludeSections,plumbPct){
   // roomAircons: optional map {roomId: true/false} for per-room AC
   // excludeSections: optional array секций для исключения (напр. ["Потолок","Двери"])
   var exclude=excludeSections||[];
@@ -498,7 +499,7 @@ function calcEstimate(rooms,cond,cls,cityK,roomMats,elecPct,bathroomCfgOrMap,roo
     var bc=isCfgMap?(bathroomCfgOrMap[r.id]||bathroomCfgOrMap["default"]||{}):(bathroomCfgOrMap||{});
     var hasAC=roomAircons&&roomAircons[r.id]?true:false;
     var mergedBc=hasAC?Object.assign({},bc,{hasAircon:true}):bc;
-    var res=calcRoom(r,cond,cls,cityK,rm.wall,rm.floor,rm.ceil,rm.door,elecPct,mergedBc,r.id===panelRoomId);
+    var res=calcRoom(r,cond,cls,cityK,rm.wall,rm.floor,rm.ceil,rm.door,elecPct,mergedBc,r.id===panelRoomId,plumbPct);
     // Фильтрация исключённых секций
     if(exclude.length){
       res.works=res.works.filter(function(w){return exclude.indexOf(w.sec)===-1;});
@@ -712,7 +713,7 @@ function ContactForm(props){
          compact=false → полная кнопка «✉️ Оставить заявку» (экраны смет).
          raised        → поднята над нижней CTA, чтобы ничего не перекрывать. */}
       {!open&&<button onClick={function(){setOpen(true);}} aria-label="Оставить заявку" title="Оставить заявку" style={{
-        position:"absolute",right:compact?12:16,bottom:btnBottom,zIndex:200,
+        position:"absolute",left:compact?12:16,bottom:btnBottom,zIndex:200,
         display:"flex",alignItems:"center",justifyContent:"center",gap:compact?0:7,
         padding:compact?0:"11px 16px",
         width:compact?34:"auto",height:compact?34:"auto",
@@ -1239,8 +1240,8 @@ function ScreenMaterials(props){
   var doorItems=["Экошпон","Массив","Эмаль","Скрытые"];
   if(isPrem)doorItems=["Массив (дуб/ясень)","Скрытые в стену","Стеклянные","Эмаль RAL"];
   if(isEco)doorItems=["Экошпон","Эмаль"];
-  var plumbItems=["Последовательная разводка","Коллекторная разводка"];
-  if(isEco)plumbItems=["Последовательная разводка"];
+  var plumbItems=["Без сантехники","Последовательная разводка","Коллекторная разводка"];
+  if(isEco)plumbItems=["Без сантехники","Последовательная разводка"];
 
   var MATS=[
     {cat:"Стены",key:"wall",items:wallItems,multi:true,emoji:"🖌️"},
@@ -1296,7 +1297,8 @@ function ScreenMaterials(props){
       s2.bathroom=numBaths===1?bathConfigs[0]:bathConfigs;
       s2.balcony=balcCfg;
       s2.aircons=selAircons; // per-room AC flags
-      props.onNext(s2,ep);
+      var pp=sel.plumb==="Без сантехники"?0:1;
+      props.onNext(s2,ep,pp);
     }
   }
 
@@ -1654,9 +1656,9 @@ function ScreenEstimate(props){
       });
       var rm=props.roomMats||fallbackMats;
       var bc=props.bathCfg||props.bathroomCfg||(props.sel&&props.sel.bathroom)||{};
-      var ep=props.elecPct!=null?props.elecPct:100;
+      var ep=props.elecPct!=null?props.elecPct:100;var pp=props.plumbPct!==undefined?props.plumbPct:1;
       var aircons=props.sel&&props.sel.aircons||{};
-      var r=calcEstimate(props.rooms||[],props.cond||"rough",props.cls||"mid",city.k,rm,ep,bc,aircons,exclSections||[]);
+      var r=calcEstimate(props.rooms||[],props.cond||"rough",props.cls||"mid",city.k,rm,ep,bc,aircons,exclSections||[],pp);
       setResult(r);
     }catch(e){
       console.error("calcEstimate error:",e);
@@ -4508,7 +4510,7 @@ export default function App(){
   var s3=useState(null);var cond=s3[0];var setCond=s3[1];
   var s4=useState(null);var cls=s4[0];var setCls=s4[1];
   var s5=useState({wall:[],floor:[],ceil:[],door:"",elec:"",plumb:"",bathroom:{}});var sel=s5[0];var setSel=s5[1];
-  var s6=useState(100);var elecPct=s6[0];var setElecPct=s6[1];
+  var s6=useState(100);var elecPct=s6[0];var setElecPct=s6[1];var s6p=useState(1);var plumbPct=s6p[0];var setPlumbPct=s6p[1];
   var s7=useState(null);var roomMats=s7[0];var setRoomMats=s7[1];
   var s8=useState({});var designCfg=s8[0];var setDesignCfg=s8[1];
   var s9=useState(null);var planImg=s9[0];var setPlanImg=s9[1];
@@ -4525,9 +4527,9 @@ export default function App(){
   if(screen==="choose")return(<Phone contactCompact={true} step={0} total={0}><ScreenChoose city={city||CITIES[0]} onBack={function(){go("city");}} onShort={function(){go("s_upload");}} onDesign={function(){go("d_upload");}}/></Phone>);
   if(screen==="s_upload")return(<Phone contactCompact={true} contactRaised={true} step={1} total={4}><ScreenUpload onBack={function(){go("choose");}} onNext={function(r){setRooms(r);go("s_cond");}} step={0} total={4}/></Phone>);
   if(screen==="s_cond")return(<Phone contactCompact={true} contactRaised={true} step={2} total={4}><ScreenCondClass onBack={function(){go("s_upload");}} onNext={function(c,cl){setCond(c);setCls(cl);go("s_mats");}} step={1} total={4}/></Phone>);
-  if(screen==="s_mats")return(<Phone contactRaised={true} contactCompact={true} step={3} total={4}><ScreenMaterials cls={cls} rooms={rooms} onBack={function(){go("s_cond");}} onNext={function(s,ep){setSel(s);setElecPct(ep);if((s.wall&&s.wall.length>1)||(s.floor&&s.floor.length>1)||(s.ceil&&s.ceil.length>1)){go("s_roomcfg");}else{go("s_estimate");} }} step={2} total={4}/></Phone>);
+  if(screen==="s_mats")return(<Phone contactRaised={true} contactCompact={true} step={3} total={4}><ScreenMaterials cls={cls} rooms={rooms} onBack={function(){go("s_cond");}} onNext={function(s,ep,pp){setSel(s);setElecPct(ep);setPlumbPct(pp!==undefined?pp:1);if((s.wall&&s.wall.length>1)||(s.floor&&s.floor.length>1)||(s.ceil&&s.ceil.length>1)){go("s_roomcfg");}else{go("s_estimate");} }} step={2} total={4}/></Phone>);
   if(screen==="s_roomcfg")return(<Phone contactRaised={true} contactCompact={true} step={3} total={5}><ScreenRoomMats rooms={rooms} sel={sel} onBack={function(){go("s_mats");}} onNext={function(rm){setRoomMats(rm);go("s_estimate");}} step={3} total={5}/></Phone>);
-  if(screen==="s_estimate")return(<Phone step={4} total={4}><ScreenEstimate city={city} rooms={rooms} cond={cond} cls={cls} sel={sel} elecPct={elecPct} roomMats={roomMats} bathroomCfg={sel.bathroom||{}} onBack={function(){go(needRoomMats?"s_roomcfg":"s_mats");}} step={3} total={4}/></Phone>);
+  if(screen==="s_estimate")return(<Phone step={4} total={4}><ScreenEstimate city={city} rooms={rooms} cond={cond} cls={cls} sel={sel} elecPct={elecPct} plumbPct={plumbPct} roomMats={roomMats} bathroomCfg={sel.bathroom||{}} onBack={function(){go(needRoomMats?"s_roomcfg":"s_mats");}} step={3} total={4}/></Phone>);
   if(screen==="d_upload")return(<Phone contactCompact={true} contactRaised={true} step={1} total={3}><ScreenUpload onBack={function(){go("choose");}} onNext={function(r,img){setRooms(r);if(img)setPlanImg(img);go("d_cond");}} onPlanGeo={function(g){setPlanGeo(g);}} step={0} total={3}/></Phone>);
   if(screen==="d_cond")return(<Phone contactCompact={true} contactRaised={true} step={2} total={3}><ScreenCondClass onBack={function(){go("d_upload");}} onNext={function(c,cl){setCond(c);setCls(cl);go("d_plan");}} step={1} total={3}/></Phone>);
   if(screen==="d_plan")return(<Phone contactRaised={true} contactCompact={true} step={2} total={3}><ScreenDesignPlan rooms={rooms} onBack={function(){go("d_cond");}} onNext={function(cfg){setDesignCfg(cfg);go("d_estimate");}}/></Phone>);
