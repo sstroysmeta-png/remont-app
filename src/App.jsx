@@ -596,8 +596,8 @@ function Phone(props){
       </div>}
       <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column",position:"relative",animation:"fadeIn 0.2s ease"}}>
         {props.children}
-        {props.contact!==false&&<ContactForm compact={props.contactCompact} raised={props.contactRaised}/>}
       </div>
+      {props.contact!==false&&<ContactForm compact={props.contactCompact} raised={props.contactRaised}/>}
     </div>
   );
 }
@@ -741,7 +741,7 @@ function ContactForm(props){
          compact=false → полная кнопка «✉️ Оставить заявку» (экраны смет).
          raised        → поднята над нижней CTA, чтобы ничего не перекрывать. */}
       {!open&&<button onClick={function(){setOpen(true);}} aria-label="Оставить заявку" title="Оставить заявку" style={{
-        position:"absolute",left:compact?12:16,bottom:btnBottom,zIndex:200,
+        position:"fixed",left:compact?12:16,bottom:btnBottom,zIndex:2000,
         display:"flex",alignItems:"center",justifyContent:"center",gap:compact?0:7,
         padding:compact?0:"11px 16px",
         width:compact?34:"auto",height:compact?34:"auto",
@@ -755,7 +755,7 @@ function ContactForm(props){
       </button>}
 
       {/* Модал формы */}
-      {open&&<div style={{position:"absolute",inset:0,zIndex:300,display:"flex",flexDirection:"column",justifyContent:"flex-end",background:"rgba(0,0,0,0.55)"}} onClick={function(){setOpen(false);}}>
+      {open&&<div style={{position:"fixed",inset:0,zIndex:3000,display:"flex",flexDirection:"column",justifyContent:"flex-end",background:"rgba(0,0,0,0.55)"}} onClick={function(){setOpen(false);}}>
         <div onClick={function(e){e.stopPropagation();}} style={{background:T.bg||"#fff",borderRadius:"22px 22px 0 0",padding:"20px 18px 24px",boxShadow:"0 -8px 32px rgba(0,0,0,0.3)"}}>
           <div style={{width:40,height:4,background:T.border,borderRadius:3,margin:"0 auto 16px"}}/>
           <div style={{fontFamily:FD,fontSize:19,fontWeight:700,color:T.dark,marginBottom:4}}>Заявка на ремонт</div>
